@@ -3,7 +3,7 @@ trigger:
     include:
       - main
 
-pool: self-hosted-pool
+pool: Default
 
 variables:
   workingDir: 'modules'
