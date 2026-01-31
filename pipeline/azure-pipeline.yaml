@@ -15,23 +15,29 @@ stages:
           inputs:
             terraformVersion: 'latest'
         - task: TerraformTaskV4@4
+          displayName: 'Terraform Init'
           inputs:
             provider: 'azurerm'
             command: 'init'
+            working_dir: '$(working_dir)'
             backendServiceArm: 'pr-connection'
             backendAzureRmResourceGroupName: 'pr-store-group'
             backendAzureRmStorageAccountName: 'prstorageaccount01'
             backendAzureRmContainerName: 'statefile'
             backendAzureRmKey: 'pr.statefile'
         - task: TerraformTaskV4@4
+          displayName: 'Terraform Plan'
           inputs:
             provider: 'azurerm'
             command: 'plan'
+            workingDirectory: '$(workDirectory)'
             environmentServiceNameAzureRM: 'pr-connection'
         - task: TerraformTaskV4@4
+          displayName: 'Terraform Apply'
           inputs:
             provider: 'azurerm'
             command: 'apply'
+            workingDirectory: '$(workDirectory)'
             commandOptions: '--auto-approve'
             environmentServiceNameAzureRM: 'pr-connection'
 
