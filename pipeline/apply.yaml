@@ -1,0 +1,57 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool: self-hosted-pool
+
+variables:
+  workingDir: 'modules'                      # Terraform code folder in repo
+  terraformPath: 'C:\Users\SANGWAN\terraform_1.9.5_windows_amd64\terraform.exe'
+  terraformPluginCache: '$(System.DefaultWorkingDirectory)\terraform_plugins'  # writable folder
+
+stages:
+- stage: initAndPlan
+  displayName: Init and Plan
+  jobs:
+  - job: terraform
+    displayName: Terraform Job
+    steps:
+
+    # 1️⃣ Ensure plugin cache folder exists
+    - powershell: |
+        if (!(Test-Path -Path "$(terraformPluginCache)")) {
+            New-Item -ItemType Directory -Path "$(terraformPluginCache)" | Out-Null
+        }
+        Write-Host "Terraform plugin cache: $(terraformPluginCache)"
+      displayName: 'Create Terraform plugin cache folder'
+
+    # 2️⃣ Terraform Init
+    - powershell: |
+        $env:TF_PLUGIN_CACHE_DIR = "$(terraformPluginCache)"
+        Write-Host "Using TF_PLUGIN_CACHE_DIR=$env:TF_PLUGIN_CACHE_DIR"
+        & "$(terraformPath)" init `
+            -backend-config="storage_account_name=prstorageaccount01" `
+            -backend-config="container_name=statefile" `
+            -backend-config="key=pr.statefile" `
+            -backend-config="resource_group_name=pr-store-group" `
+            -backend-config="subscription_id=$(subscriptionId)" `
+            -backend-config="tenant_id=$(tenantId)" `
+            -backend-config="client_id=$(clientId)" `
+            -backend-config="client_secret=$(clientSecret)"
+      workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+      displayName: 'Terraform Init'
+
+    # 3️⃣ Terraform Plan
+    - powershell: |
+        $env:TF_PLUGIN_CACHE_DIR = "$(terraformPluginCache)"
+        & "$(terraformPath)" plan -out=tfplan
+      workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+      displayName: 'Terraform Plan'
+
+    # 4️⃣ Terraform Apply
+    - powershell: |
+        $env:TF_PLUGIN_CACHE_DIR = "$(terraformPluginCache)"
+        & "$(terraformPath)" apply -auto-approve tfplan
+      workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+      displayName: 'Terraform Apply'
