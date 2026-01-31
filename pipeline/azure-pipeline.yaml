@@ -11,7 +11,7 @@ stages:
     displayName: Initialization
     steps:
 
-    # Step 0: Set Terraform plugin cache to a writable folder
+    # Step 0: Set Terraform plugin cache to a writable directory
     - powershell: |
         $env:TF_PLUGIN_CACHE_DIR = "C:\TerraformPlugins"
         Write-Host "Terraform plugin cache set to $env:TF_PLUGIN_CACHE_DIR"
