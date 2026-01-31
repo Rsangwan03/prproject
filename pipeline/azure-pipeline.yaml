@@ -6,8 +6,8 @@ trigger:
 
 pool: self-hosted-pool
 
-variables:
-  workingDir: 'module'  # make sure this folder exists in repo
+# variables:
+#   workingDir: 'module'  # make sure this folder exists in repo
 
 stages:
 - stage: initAndPlan
@@ -24,7 +24,7 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'init'
-        workingDirectory: '$(workingDir)'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/modules'
         backendServiceArm: 'pr-connection'
         backendAzureRmResourceGroupName: 'pr-store-group'
         backendAzureRmStorageAccountName: 'prstorageaccount01'
@@ -35,13 +35,13 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'plan'
-        workingDirectory: '$(workingDir)'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/modules'
         environmentServiceNameAzureRM: 'pr-connection'
     - task: TerraformTaskV4@4
       displayName: 'Terraform Apply'
       inputs:
         provider: 'azurerm'
         command: 'apply'
-        workingDirectory: '$(workingDir)'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/modules'
         commandOptions: '--auto-approve'
         environmentServiceNameAzureRM: 'pr-connection'
