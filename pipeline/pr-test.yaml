@@ -1,0 +1,12 @@
+vaiable:
+  working_dir: ./modules
+
+trigger: none
+
+pool: self-hosted-pool
+
+steps:
+- task: TerraformInstaller@1
+  inputs:
+    terraformVersion: '1.5.6'
+    
