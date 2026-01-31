@@ -1,13 +1,9 @@
-
 trigger:
   branches:
     include:
       - main
 
 pool: self-hosted-pool
-
-# variables:
-#   workingDir: 'module'  # make sure this folder exists in repo
 
 stages:
 - stage: initAndPlan
@@ -16,10 +12,14 @@ stages:
   - job: terraformInit
     displayName: Initialization
     steps:
-    # - task: TerraformInstaller@1
-    #   inputs:
-    #     terraformVersion: '1.14.4'  # or 'latest'
-   
+
+    # Step 0: Set Terraform plugin cache to a writable folder
+    - powershell: |
+        $env:TF_PLUGIN_CACHE_DIR = "C:\TerraformPlugins"
+        Write-Host "Terraform plugin cache set to $env:TF_PLUGIN_CACHE_DIR"
+      displayName: 'Set Terraform plugin cache'
+
+    # Terraform Init
     - task: TerraformTaskV4@4
       displayName: 'Terraform Init'
       inputs:
@@ -31,6 +31,8 @@ stages:
         backendAzureRmStorageAccountName: 'prstorageaccount01'
         backendAzureRmContainerName: 'statefile'
         backendAzureRmKey: 'pr.statefile'
+
+    # Terraform Plan
     - task: TerraformTaskV4@4
       displayName: 'Terraform Plan'
       inputs:
@@ -38,6 +40,8 @@ stages:
         command: 'plan'
         workingDirectory: '$(System.DefaultWorkingDirectory)/modules'
         environmentServiceNameAzureRM: 'pr-connection'
+
+    # Terraform Apply
     - task: TerraformTaskV4@4
       displayName: 'Terraform Apply'
       inputs:
