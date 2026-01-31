@@ -6,17 +6,21 @@ trigger:
 pool: self-hosted-pool
 
 variables:
-  workingDir: 'modules'                      
-  terraformPath: 'C:\Users\SANGWAN\terraform_1.9.5_windows_amd64\terraform.exe'
-  terraformPluginCache: '$(System.DefaultWorkingDirectory)\terraform_plugins'  
+  workingDir: 'modules'
+  terraformPluginCache: '$(System.DefaultWorkingDirectory)\terraform_plugins'
 
 stages:
-- stage: initAndPlan
-  displayName: Init and Plan
+- stage: initPlanApply
+  displayName: Terraform Init/Plan/Apply
   jobs:
   - job: terraform
     displayName: Terraform Job
     steps:
+
+    # 0️⃣ Set Terraform plugin cache environment variable
+    - powershell: |
+        Write-Host "##vso[task.setvariable variable=TF_PLUGIN_CACHE_DIR]$(terraformPluginCache)"
+      displayName: 'Set TF_PLUGIN_CACHE_DIR'
 
     # 1️⃣ Create plugin cache folder
     - powershell: |
@@ -26,14 +30,14 @@ stages:
         Write-Host "Terraform plugin cache: $(terraformPluginCache)"
       displayName: 'Create Terraform plugin cache folder'
 
-    # 2️⃣ Terraform Init using service connection
+    # 2️⃣ Terraform Init
     - task: TerraformTaskV4@4
       displayName: 'Terraform Init'
       inputs:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
-        backendServiceArm: 'pr-connection'       # Azure Service Connection
+        backendServiceArm: 'pr-connection'
         backendAzureRmResourceGroupName: 'pr-store-group'
         backendAzureRmStorageAccountName: 'prstorageaccount01'
         backendAzureRmContainerName: 'statefile'
