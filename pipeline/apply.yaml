@@ -6,9 +6,9 @@ trigger:
 pool: self-hosted-pool
 
 variables:
-  workingDir: 'modules'                      # Terraform code folder in repo
+  workingDir: 'modules'                      
   terraformPath: 'C:\Users\SANGWAN\terraform_1.9.5_windows_amd64\terraform.exe'
-  terraformPluginCache: '$(System.DefaultWorkingDirectory)\terraform_plugins'  # writable folder
+  terraformPluginCache: '$(System.DefaultWorkingDirectory)\terraform_plugins'  
 
 stages:
 - stage: initAndPlan
@@ -18,7 +18,7 @@ stages:
     displayName: Terraform Job
     steps:
 
-    # 1️⃣ Ensure plugin cache folder exists
+    # 1️⃣ Create plugin cache folder
     - powershell: |
         if (!(Test-Path -Path "$(terraformPluginCache)")) {
             New-Item -ItemType Directory -Path "$(terraformPluginCache)" | Out-Null
@@ -26,32 +26,34 @@ stages:
         Write-Host "Terraform plugin cache: $(terraformPluginCache)"
       displayName: 'Create Terraform plugin cache folder'
 
-    # 2️⃣ Terraform Init
-    - powershell: |
-        $env:TF_PLUGIN_CACHE_DIR = "$(terraformPluginCache)"
-        Write-Host "Using TF_PLUGIN_CACHE_DIR=$env:TF_PLUGIN_CACHE_DIR"
-        & "$(terraformPath)" init `
-            -backend-config="storage_account_name=prstorageaccount01" `
-            -backend-config="container_name=statefile" `
-            -backend-config="key=pr.statefile" `
-            -backend-config="resource_group_name=pr-store-group" `
-            -backend-config="subscription_id=$(subscriptionId)" `
-            -backend-config="tenant_id=$(tenantId)" `
-            -backend-config="client_id=$(clientId)" `
-            -backend-config="client_secret=$(clientSecret)"
-      workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+    # 2️⃣ Terraform Init using service connection
+    - task: TerraformTaskV4@4
       displayName: 'Terraform Init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+        backendServiceArm: 'pr-connection'       # Azure Service Connection
+        backendAzureRmResourceGroupName: 'pr-store-group'
+        backendAzureRmStorageAccountName: 'prstorageaccount01'
+        backendAzureRmContainerName: 'statefile'
+        backendAzureRmKey: 'pr.statefile'
 
     # 3️⃣ Terraform Plan
-    - powershell: |
-        $env:TF_PLUGIN_CACHE_DIR = "$(terraformPluginCache)"
-        & "$(terraformPath)" plan -out=tfplan
-      workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+    - task: TerraformTaskV4@4
       displayName: 'Terraform Plan'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+        environmentServiceNameAzureRM: 'pr-connection'
 
     # 4️⃣ Terraform Apply
-    - powershell: |
-        $env:TF_PLUGIN_CACHE_DIR = "$(terraformPluginCache)"
-        & "$(terraformPath)" apply -auto-approve tfplan
-      workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+    - task: TerraformTaskV4@4
       displayName: 'Terraform Apply'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(workingDir)'
+        commandOptions: '--auto-approve'
+        environmentServiceNameAzureRM: 'pr-connection'
