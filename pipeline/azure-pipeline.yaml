@@ -19,16 +19,7 @@ stages:
     # - task: TerraformInstaller@1
     #   inputs:
     #     terraformVersion: '1.14.4'  # or 'latest'
-    - task: AzureCLI@2
-      displayName: 'Azure CLI login for Terraform'
-      inputs:
-        azureSubscription: 'pr-connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          # Ensure the Azure CLI has an auth token with the management scope
-          az login --scope https://management.azure.com//.default || true
-          az account show
+   
     - task: TerraformTaskV4@4
       displayName: 'Terraform Init'
       inputs:
