@@ -1,0 +1,39 @@
+
+trigger:
+- main
+
+pool: self-hosted-pool
+
+stages:
+- stage : initAndPlan
+  displayName: init and plan
+  jobs:
+    - job: terraformInit
+      displayName: initialization
+      steps:
+        - task: TerraformInstaller@1
+          inputs:
+            terraformVersion: 'latest'
+        - task: TerraformTaskV4@4
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            backendServiceArm: 'pr-connection'
+            backendAzureRmResourceGroupName: 'pr-store-group'
+            backendAzureRmStorageAccountName: 'prstorageaccount01'
+            backendAzureRmContainerName: 'statefile'
+            backendAzureRmKey: 'pr.statefile'
+        - task: TerraformTaskV4@4
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            environmentServiceNameAzureRM: 'pr-connection'
+        - task: TerraformTaskV4@4
+          inputs:
+            provider: 'azurerm'
+            command: 'apply'
+            commandOptions: '--auto-approve'
+            environmentServiceNameAzureRM: 'pr-connection'
+
+    
+
